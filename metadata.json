@@ -1,0 +1,8 @@
+{
+  "name": "Nostr 3D Cube",
+  "description": "A futuristic Nostr web client featuring a CSS 3D Cube interface for navigating timelines, notifications, and profiles.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
