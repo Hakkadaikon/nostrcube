@@ -1,41 +1,41 @@
 # 🧊 Nostrcube: The Decentralized 3D Interface
 
-**Nostrcube** は、分散型SNSプロトコル 「Nostr」 の可能性を最大限に引き出すために設計された、次世代の Web クライアントです。伝統的なフラットなタイムラインの概念を打ち破り、CSS 3D 空間を利用した直感的な 6 面体インターフェースを提供します。
+**Nostrcube** is a next-generation web client designed to unlock the full potential of the decentralized SNS protocol "Nostr." It breaks the traditional concept of flat timelines, offering an intuitive hexahedral (six-sided) interface utilizing CSS 3D space.
 
 ---
 
-## 🚀 コンセプト: "Navigate the Void"
+## 🚀 Concept: "Navigate the Void"
 
-2026年、SNSは単なる情報のストリームではなく、ユーザーの「デジタル空間」へと進化しました。Nostrcube は、ユーザーを宇宙の深淵（The Void）に浮かぶ立方体の操縦席へと誘います。各面は Nostr プロトコルの異なる側面を象徴し、回転によってコンテキストを瞬時に切り替えることができます。
-
----
-
-## 🌟 主な機能
-
-### 1. 🧊 3D 立方体ナビゲーション
-- **FRONT (正面):** フォローしているユーザーのタイムライン。
-- **BACK (背面):** 全世界（Global）のパブリックストリーム。
-- **TOP (上面):** 新規ノート作成（Compose）専用の没入型エディタ。
-- **BOTTOM (下面):** ネットワーク上で拡散されている最新のReposts。
-- **LEFT (左面):** インタラクションを逃さないリアルタイム通知。
-- **RIGHT (右面):** アイデンティティ管理と NIP-65 に基づくリレー設定。
-
-### 2. 🔐 高度な Nostr 認証 (NIP-07)
-- **NIP-07 準拠:** Alby や Nos2x などのブラウザ拡張機能を使用した安全なログイン。
-- **ダイナミック・フェッチ:** ログイン時に自動的に `kind:3` (フォローリスト) と `kind:10002` (リレーリスト) を取得し、即座にパーソナライズされた体験を提供します。
-
-### 3. 📡 インテリジェント・リレー・マネジメント
-- **NIP-65 サポート:** ユーザーがオンチェーンに保存しているリレー設定を尊重し、Read/Write モードまで正確に反映。
-- **動的トグル:** UI 上でリレーの接続/切断をリアルタイムに制御。接続状況は `Wifi` アイコンのネオンインジケータで可視化されます。
-
-### 4. 🎨 サイバー・ミニマリズム・デザイン
-- **Glassmorphism:** 背景のボケと透過を多用した、深度のあるUI。
-- **Dynamic Glow:** 接続状態や通知に合わせて、グリフやボーダーが脈動するように光ります。
-- **Fluid Animation:** 物理演算に基づいたスムーズな立方体の回転アニメーション。
+In 2026, social networking has evolved from a simple stream of information into a "digital space" for the user. Nostrcube invites you into the cockpit of a cube floating in the deep abyss (The Void). Each face symbolizes a different aspect of the Nostr protocol, allowing you to instantly switch contexts by rotating the cube.
 
 ---
 
-## 🛠 技術スタック
+## 🌟 Key Features
+
+### 1. 🧊 3D Cube Navigation
+- **FRONT:** Home timeline, filtered by the users you follow.
+- **BACK:** The Global stream, a public pulse of the entire network.
+- **TOP:** An immersive editor dedicated to creating new notes (Compose).
+- **BOTTOM:** Recent Reposts circulating through the network.
+- **LEFT:** Real-time Notifications to keep you connected with interactions.
+- **RIGHT:** Identity Management and relay configuration based on NIP-65.
+
+### 2. 🔐 Advanced Nostr Authentication (NIP-07)
+- **NIP-07 Compliant:** Secure login using browser extensions like Alby or Nos2x.
+- **Dynamic Fetching:** Upon login, the app automatically retrieves your `kind:3` (Contact List) and `kind:10002` (Relay List) to provide an instantly personalized experience.
+
+### 3. 📡 Intelligent Relay Management
+- **NIP-65 Support:** Respects on-chain relay settings, accurately reflecting Read/Write modes.
+- **Dynamic Toggles:** Real-time control of relay connections directly from the UI. Connection status is visualized with neon indicators on the `Wifi` icons.
+
+### 4. 🎨 Cyber-Minimalist Design
+- **Glassmorphism:** A deep UI utilizing heavy background blur and transparency.
+- **Dynamic Glow:** Glyphs and borders pulse with light in sync with connection states and notifications.
+- **Fluid Animation:** Smooth cube rotation animations based on physical easing.
+
+---
+
+## 🛠 Tech Stack
 
 - **Framework:** React 19 (Strict Mode)
 - **3D Engine:** CSS 3D Transforms & Perspective
@@ -46,28 +46,28 @@
 
 ---
 
-## 📖 使い方
+## 📖 How to Use
 
-1. **初期化:** アプリを起動すると、デフォルトのリレープールに自動接続されます。
-2. **ログイン:** 右面（Identity & Settings）へ回転し、「Use Browser Extension」をクリックして承認します。
-3. **リレー同期:** ログイン後、リレー管理画面から「Refresh」ボタンを押すことで、自身の `kind:10002` 設定を同期できます。
-4. **投稿:** 上面（Compose）でノートを入力し、Publish ボタンを押すと、接続中の Write リレーへ一斉にブロードキャストされます。
-
----
-
-## ⚡ 開発者向け情報
-
-### ディレクトリ構成
-- `/services`: `nostr.ts` (NDK インスタンスと Nostr 通信のコアロジック)
-- `/components`: UI コンポーネント（NoteCard, Timeline, CubeFaceWrapper等）
-- `/types`: プロジェクト全体で共有されるインターフェース定義
-
-### カスタマイズ
-`App.tsx` の `getCubeRotation` 関数を調整することで、回転の速度やイージング、初期のパースペクティブを変更可能です。
+1. **Initialization:** When the app starts, it automatically connects to a pool of default relays.
+2. **Login:** Rotate to the Right face (Identity & Settings) and click "Use Browser Extension" to approve.
+3. **Relay Sync:** After logging in, use the "Refresh" button in the relay management screen to sync your own `kind:10002` settings.
+4. **Posting:** Enter your note on the Top face (Compose) and click the Publish button to broadcast to all connected Write relays.
 
 ---
 
-## 🛡 ライセンス
-Nostrcube は、自由で開かれた分散型ウェブの精神に基づき、オープンソースとして提供されています。
+## ⚡ Developer Information
+
+### Directory Structure
+- `/services`: `nostr.ts` (Core logic for NDK instance and Nostr communication)
+- `/components`: UI Components (NoteCard, Timeline, CubeFaceWrapper, etc.)
+- `/types`: Shared interface definitions across the project
+
+### Customization
+By adjusting the `getCubeRotation` function in `App.tsx`, you can change the rotation speed, easing, and initial perspective of the interface.
+
+---
+
+## 🛡 License
+Nostrcube is provided as open-source, based on the spirit of a free and open decentralized web.
 
 > "Your keys, your content. Your cube, your perspective."
