@@ -6,7 +6,7 @@ import { CubeFaceWrapper } from './components/CubeFaceWrapper';
 import { Timeline } from './components/Timeline';
 import { Compose } from './components/Compose';
 import { ProfileSettings } from './components/ProfileSettings';
-import { Home, Globe, Bell, User, Search, MousePointer2, Rotate3d, ChevronRight } from 'lucide-react';
+import { Home, Globe, Bell, User, Search, MousePointer2, Rotate3d, ChevronRight, Key, LogOut, ShieldCheck, Loader2, AlertTriangle } from 'lucide-react';
 
 const FRICTION = 0.95;
 const SENSITIVITY = 0.4;
@@ -23,6 +23,8 @@ const App: React.FC = () => {
   const [isMoving, setIsMoving] = useState(false);
   const [mode, setMode] = useState<InteractionMode>('SCROLL');
   const [isNavVisible, setIsNavVisible] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
   
   const [currentRot, setCurrentRot] = useState({ x: 0, y: 0 });
   const rotation = useRef({ x: 0, y: 0 });
@@ -36,7 +38,6 @@ const App: React.FC = () => {
     let mounted = true;
     const init = async () => {
       try {
-        // 初期化。失敗してもUIは表示させる
         const timeout = new Promise(resolve => setTimeout(resolve, 3500));
         await Promise.race([nostrService.init(), timeout]);
       } catch (e) {
@@ -48,7 +49,10 @@ const App: React.FC = () => {
     init();
 
     const unsubscribe = nostrService.onAuthStateChange(() => {
-      if (mounted) setAuthVersion(v => v + 1);
+      if (mounted) {
+        setAuthVersion(v => v + 1);
+        setLoginError(null);
+      }
     });
 
     return () => {
@@ -57,6 +61,31 @@ const App: React.FC = () => {
       if (rafId.current) cancelAnimationFrame(rafId.current);
     };
   }, []);
+
+  const handleLogin = async () => {
+    if (isLoggingIn) return;
+    setIsLoggingIn(true);
+    setLoginError(null);
+    try {
+      if (!(window as any).nostr) {
+        throw new Error("NIP-07 extension (Alby, Nos2x, etc.) not found.");
+      }
+      const user = await nostrService.loginWithExtension();
+      if (!user) {
+        throw new Error("Authentication failed or cancelled.");
+      }
+    } catch (e: any) {
+      console.error("Login error:", e);
+      setLoginError(e.message);
+      setTimeout(() => setLoginError(null), 5000);
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleLogout = () => {
+    nostrService.logout();
+  };
 
   const updateActiveFaceFromRotation = (x: number, y: number) => {
     const nx = Math.round(x / 90) * 90;
@@ -81,8 +110,6 @@ const App: React.FC = () => {
     
     const targetX = Math.round(rotation.current.x / 90) * 90;
     const targetY = Math.round(rotation.current.y / 90) * 90;
-    
-    // 垂直方向（TOP/BOTTOM）の場合はY軸をリセットしてねじれを防ぐ
     const isVertical = Math.abs(targetX % 180) === 90;
     const finalY = isVertical ? Math.round(targetY / 360) * 360 : targetY;
 
@@ -175,10 +202,12 @@ const App: React.FC = () => {
     }, 850);
   };
 
-  const loggedIn = !!nostrService.currentUser;
+  const currentUser = nostrService.currentUser;
+  const loggedIn = !!currentUser;
+  
   const homeFilter = useMemo(() => {
-    if (loggedIn && nostrService.currentUser) {
-      const authors = [nostrService.currentUser.pubkey, ...nostrService.following];
+    if (loggedIn && currentUser) {
+      const authors = [currentUser.pubkey, ...nostrService.following];
       return { kinds: [1], authors };
     }
     return { kinds: [1], limit: 50 };
@@ -206,8 +235,8 @@ const App: React.FC = () => {
             <div className="absolute inset-4 border-r-4 border-emerald-500 rounded-full animate-spin-slow"></div>
         </div>
         <div className="mt-12 text-center">
-            <p className="text-blue-500 font-mono text-[10px] tracking-[0.8em] uppercase animate-pulse">Initializing 3D Matrix</p>
-            <p className="text-zinc-600 text-[9px] mt-3 uppercase tracking-widest opacity-50">Establishing Relay Protocol...</p>
+            <p className="text-blue-500 font-mono text-[10px] tracking-[0.8em] uppercase animate-pulse">Initializing Cube Interface</p>
+            <p className="text-zinc-600 text-[9px] mt-3 uppercase tracking-widest opacity-50">Establishing Relay Connection...</p>
         </div>
       </div>
     );
@@ -218,6 +247,61 @@ const App: React.FC = () => {
       className={`h-screen w-screen overflow-hidden flex flex-col bg-[#050505] select-none text-white font-sans ${mode === 'SPIN' ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
       onDoubleClick={() => setMode(prev => prev === 'SPIN' ? 'SCROLL' : 'SPIN')}
     >
+      {/* 🚀 TOP-LEFT AUTH UNIT */}
+      <div className="fixed top-6 left-6 z-[150] pointer-events-auto flex flex-col items-start gap-2">
+        {!loggedIn ? (
+          <div className="flex flex-col gap-2">
+            <button 
+              onClick={handleLogin}
+              disabled={isLoggingIn}
+              className="group relative flex items-center gap-4 bg-blue-600 hover:bg-blue-500 px-6 py-4 rounded-2xl shadow-[0_0_30px_rgba(37,99,235,0.4)] transition-all active:scale-95 disabled:opacity-50"
+            >
+              {isLoggingIn ? (
+                <Loader2 className="animate-spin" size={20} />
+              ) : (
+                <Key size={20} className="group-hover:rotate-12 transition-transform" />
+              )}
+              <span className="font-black text-sm uppercase tracking-widest italic">Connect Nostr</span>
+            </button>
+            {loginError && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-[10px] font-bold uppercase tracking-tighter animate-in slide-in-from-left-4">
+                <AlertTriangle size={14} />
+                {loginError}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="group/profile relative flex items-center gap-4 bg-black/60 backdrop-blur-3xl border border-white/10 p-2 pr-6 rounded-3xl shadow-2xl hover:border-blue-500/30 transition-all">
+            <div className="relative">
+              <img 
+                src={currentUser.profile?.image || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.pubkey}`} 
+                alt="Avatar" 
+                className="w-12 h-12 rounded-2xl object-cover bg-zinc-900 border border-white/10 shadow-lg"
+              />
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-black rounded-full" />
+            </div>
+            <div className="flex flex-col min-w-[120px] max-w-[200px]">
+              <span className="font-black text-sm text-zinc-100 truncate flex items-center gap-1 leading-none mb-1">
+                {currentUser.profile?.displayName || currentUser.profile?.name || "Voyager"}
+                <ShieldCheck size={14} className="text-blue-400 shrink-0" />
+              </span>
+              <span className="text-[10px] text-blue-400/70 font-mono truncate leading-none">
+                {currentUser.profile?.nip05 || `@${currentUser.pubkey.slice(0, 8)}`}
+              </span>
+            </div>
+            
+            {/* Logout Trigger */}
+            <button 
+              onClick={handleLogout}
+              className="ml-2 p-2.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+              title="Disconnect"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* 画面右上のモードステータス */}
       <div className="fixed top-6 right-6 z-[70] flex flex-col items-end gap-2 pointer-events-none">
         <div className="flex items-center gap-4 bg-black/40 backdrop-blur-3xl border border-white/10 px-6 py-4 rounded-3xl shadow-2xl">
@@ -237,7 +321,7 @@ const App: React.FC = () => {
         className="flex-1 min-h-0 relative flex items-center justify-center overflow-hidden"
         onMouseDown={(e) => {
             if (mode !== 'SPIN' || isComposeOpen) return;
-            if ((e.target as HTMLElement).closest('button, input, textarea, a, .scroll-content')) return;
+            if ((e.target as HTMLElement).closest('button, input, textarea, a, .scroll-content, .fixed')) return;
             startDrag(e.clientX, e.clientY);
         }}
         onMouseMove={(e) => moveDrag(e.clientX, e.clientY)}
@@ -245,7 +329,7 @@ const App: React.FC = () => {
         onMouseLeave={() => stopDrag()}
         onTouchStart={(e) => {
             if (mode !== 'SPIN' || isComposeOpen) return;
-            if ((e.target as HTMLElement).closest('button, input, textarea, a, .scroll-content')) return;
+            if ((e.target as HTMLElement).closest('button, input, textarea, a, .scroll-content, .fixed')) return;
             startDrag(e.touches[0].clientX, e.touches[0].clientY);
         }}
         onTouchMove={(e) => {
@@ -277,7 +361,7 @@ const App: React.FC = () => {
             <CubeFaceWrapper title="Alerts" isScrollable={mode === 'SCROLL'} className="bg-[#0d0d0e]">
               <div className="flex flex-col items-center justify-center h-full text-zinc-700 space-y-6">
                 <Bell size={80} className="opacity-5" />
-                <p className="font-mono text-[10px] tracking-[0.5em] uppercase opacity-20">Static Frequency</p>
+                <p className="font-mono text-[10px] tracking-[0.5em] uppercase opacity-20">No Disturbances</p>
               </div>
             </CubeFaceWrapper>
           </div>
@@ -290,7 +374,7 @@ const App: React.FC = () => {
             <CubeFaceWrapper title="Search" isScrollable={mode === 'SCROLL'} className="bg-[#050506]">
                 <div className="flex flex-col items-center justify-center h-full p-12">
                     <Search size={80} className="opacity-5 mb-10" />
-                    <input type="text" placeholder="Scanning Archive..." className="w-full bg-white/5 border border-white/10 rounded-3xl p-8 text-center font-mono outline-none focus:border-blue-500/50 transition-all text-2xl shadow-inner" />
+                    <input type="text" placeholder="Scanning Memory Grid..." className="w-full bg-white/5 border border-white/10 rounded-3xl p-8 text-center font-mono outline-none focus:border-blue-500/50 transition-all text-2xl shadow-inner" />
                 </div>
             </CubeFaceWrapper>
           </div>
@@ -324,15 +408,11 @@ const App: React.FC = () => {
           isNavVisible ? 'translate-x-0' : '-translate-x-full opacity-0 md:opacity-100 md:-translate-x-[90%]'
         }`}
       >
-        {/* スマホ用閉じるボタン */}
-        <button 
-          onClick={() => setIsNavVisible(false)}
-          className="md:hidden self-end p-2 text-zinc-500"
-        >
+        <div className="md:hidden self-end p-2 text-zinc-500">
           <ChevronRight className="rotate-180" size={24} />
-        </button>
+        </div>
 
-        <div className="flex flex-col items-center gap-1 mb-4">
+        <div className="flex flex-col items-center gap-1 mb-4 mt-20 md:mt-40">
             <div className={`w-1 h-12 rounded-full transition-all duration-700 ${mode === 'SCROLL' ? 'bg-emerald-500' : 'bg-blue-500'}`} />
         </div>
         
@@ -357,7 +437,7 @@ const App: React.FC = () => {
           </button>
         ))}
         
-        <div className="mt-auto flex flex-col items-center">
+        <div className="mt-auto flex flex-col items-center pb-6">
             <p className="text-[8px] text-zinc-600 font-mono tracking-widest uppercase [writing-mode:vertical-rl] opacity-40">Nostrcube v3.1</p>
         </div>
       </nav>
@@ -376,7 +456,6 @@ const App: React.FC = () => {
         }
         @media (max-width: 768px) {
           .backface-hidden {
-             /* モバイルでのパフォーマンス最適化 */
              backface-visibility: visible;
           }
         }
