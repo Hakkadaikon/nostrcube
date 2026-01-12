@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { NDKEvent } from '@nostr-dev-kit/ndk';
+import { NDKEvent, NDKNip07Signer } from '@nostr-dev-kit/ndk';
 import { nostrService } from '../services/nostr';
-import { Send, Image as ImageIcon, Smile, MapPin, X } from 'lucide-react';
+import { Send, Image as ImageIcon, Smile, MapPin, X, AlertCircle } from 'lucide-react';
 
 interface Props {
   onClose: () => void;
@@ -11,21 +11,36 @@ interface Props {
 export const Compose: React.FC<Props> = ({ onClose }) => {
   const [content, setContent] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handlePost = async () => {
     if (!content.trim() || isSending) return;
     
     setIsSending(true);
+    setError(null);
+    
     try {
+      // NDKインスタンスに署名者がセットされているか確認、なければ試みる
+      if (!nostrService.ndk.signer) {
+        nostrService.ndk.signer = new NDKNip07Signer();
+      }
+
       const event = new NDKEvent(nostrService.ndk);
       event.kind = 1;
       event.content = content;
+      event.created_at = Math.floor(Date.now() / 1000);
+      
+      // 署名と送信
       await event.publish();
+      
+      // 成功したらIndexedDBにキャッシュして高速反映を補助
+      await nostrService.cacheEvent(event);
+      
       setContent('');
       onClose();
-    } catch (e) {
-      console.error(e);
-      alert("Publish failed. Is your signer connected?");
+    } catch (e: any) {
+      console.error("Publish failed:", e);
+      setError(e.message || "Broadcast interrupted. Check your NIP-07 provider.");
     } finally {
       setIsSending(false);
     }
@@ -33,13 +48,11 @@ export const Compose: React.FC<Props> = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Overlay */}
       <div 
         className="absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity"
         onClick={onClose}
       />
       
-      {/* Modal Content */}
       <div className="relative w-full max-w-lg bg-zinc-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
         <div className="p-6">
           <header className="flex items-center justify-between mb-6">
@@ -54,11 +67,22 @@ export const Compose: React.FC<Props> = ({ onClose }) => {
 
           <textarea
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(e) => {
+              setContent(e.target.value);
+              if (error) setError(null);
+            }}
             placeholder="Input neural signal..."
             autoFocus
-            className="w-full bg-zinc-800/30 border border-white/5 rounded-2xl p-4 text-lg text-zinc-100 placeholder-zinc-600 focus:ring-1 focus:ring-blue-500/50 outline-none resize-none h-40 mb-6 font-light transition-all"
+            disabled={isSending}
+            className="w-full bg-zinc-800/30 border border-white/5 rounded-2xl p-4 text-lg text-zinc-100 placeholder-zinc-600 focus:ring-1 focus:ring-blue-500/50 outline-none resize-none h-40 mb-2 font-light transition-all"
           />
+
+          {error && (
+            <div className="flex items-center gap-2 text-red-400 text-xs font-mono mb-4 animate-in slide-in-from-top-1">
+              <AlertCircle size={14} />
+              {error}
+            </div>
+          )}
 
           <div className="flex items-center justify-between border-t border-white/5 pt-6">
             <div className="flex gap-4 text-zinc-500">
@@ -76,7 +100,7 @@ export const Compose: React.FC<Props> = ({ onClose }) => {
                   : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
               }`}
             >
-              {isSending ? "Encrypting..." : "Transmit"}
+              {isSending ? "Syncing..." : "Transmit"}
               <Send size={18} />
             </button>
           </div>

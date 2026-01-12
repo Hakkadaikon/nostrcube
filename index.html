@@ -23,6 +23,10 @@
             height: 100%;
             width: 100%;
         }
+        /* 万が一の描画エラー時も背景が真っ黒にならないようグラデーションを配置 */
+        .bg-void {
+            background: radial-gradient(circle at center, #0a0a15 0%, #050505 100%);
+        }
         ::-webkit-scrollbar {
             width: 6px;
         }
@@ -32,9 +36,6 @@
         ::-webkit-scrollbar-thumb {
             background: #333;
             border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #444;
         }
     </style>
 <script type="importmap">
@@ -47,16 +48,16 @@
     "date-fns": "https://esm.sh/date-fns@4.1.0",
     "nostr-tools": "https://esm.sh/nostr-tools@2.19.4",
     "@nostr-dev-kit/ndk": "https://esm.sh/@nostr-dev-kit/ndk@2.18.1",
-    "vite": "https://esm.sh/vite@^7.3.1",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/",
-    "date-fns/": "https://esm.sh/date-fns@^4.1.0/"
+    "date-fns/": "https://esm.sh/date-fns@^4.1.0/",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
   }
 }
 </script>
 </head>
-<body class="dark">
+<body class="bg-void">
     <div id="root"></div>
 </body>
 </html>

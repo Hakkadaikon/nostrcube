@@ -13,7 +13,7 @@ interface Props {
   interactionMode: InteractionMode;
 }
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 50;
 
 export const Timeline: React.FC<Props> = ({ filter, live = true, isMoving = false, interactionMode }) => {
   const [events, setEvents] = useState<NDKEvent[]>([]);
@@ -23,39 +23,61 @@ export const Timeline: React.FC<Props> = ({ filter, live = true, isMoving = fals
   const observerTarget = useRef<HTMLDivElement>(null);
   const filterString = JSON.stringify(filter);
 
-  // モードを参照するためのRef。副作用内での最新値取得に使用。
   const modeRef = useRef(interactionMode);
   useEffect(() => { modeRef.current = interactionMode; }, [interactionMode]);
+
+  const mergeEvents = (prev: NDKEvent[], next: NDKEvent[]) => {
+    const uniqueMap = new Map();
+    [...prev, ...next].forEach(e => uniqueMap.set(e.id, e));
+    const sorted = Array.from(uniqueMap.values()).sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+    
+    if (sorted.length > 0) {
+      oldestTimestamp.current = sorted[sorted.length - 1].created_at;
+    }
+    return sorted;
+  };
 
   const loadEvents = useCallback(async (isInitial: boolean = false) => {
     if (loading || (!isInitial && !hasMore)) return;
 
     setLoading(true);
     try {
-      const currentFilter = { 
-        ...filter, 
-        limit: PAGE_SIZE,
-        until: isInitial ? undefined : oldestTimestamp.current 
-      };
+      let fetchedNetwork: NDKEvent[] = [];
+      let fetchedCache: NDKEvent[] = [];
 
-      const fetched = await nostrService.fetchNotes(currentFilter);
-      const newEvents = Array.from(fetched) as NDKEvent[];
-      
-      if (newEvents.length < PAGE_SIZE) {
+      if (isInitial) {
+        // 1. まずIndexedDBから最新50件を即座にロード（UX向上）
+        fetchedCache = await nostrService.getCachedEvents(filter, PAGE_SIZE);
+        if (fetchedCache.length > 0) {
+          setEvents(prev => mergeEvents(prev, fetchedCache));
+        }
+
+        // 2. リレーから最新50件をフェッチ（データの鮮度保証）
+        const currentFilter = { ...filter, limit: PAGE_SIZE };
+        const set = await nostrService.fetchNotes(currentFilter);
+        fetchedNetwork = Array.from(set);
+      } else {
+        // 追加読み込み時: 過去のデータをIndexedDBから探す
+        fetchedCache = await nostrService.getCachedEvents(filter, PAGE_SIZE, oldestTimestamp.current);
+        
+        if (fetchedCache.length < PAGE_SIZE) {
+          // DBに十分なデータがない場合のみネットワークから取得
+          const currentFilter = { 
+            ...filter, 
+            limit: PAGE_SIZE,
+            until: oldestTimestamp.current 
+          };
+          const set = await nostrService.fetchNotes(currentFilter);
+          fetchedNetwork = Array.from(set);
+        }
+      }
+
+      const combinedNew = [...fetchedCache, ...fetchedNetwork];
+      if (combinedNew.length < PAGE_SIZE && !isInitial) {
         setHasMore(false);
       }
 
-      setEvents(prev => {
-        const combined = isInitial ? newEvents : [...prev, ...newEvents];
-        const uniqueMap = new Map();
-        combined.forEach(e => uniqueMap.set(e.id, e));
-        const sorted = Array.from(uniqueMap.values()).sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
-        
-        if (sorted.length > 0) {
-          oldestTimestamp.current = sorted[sorted.length - 1].created_at;
-        }
-        return sorted;
-      });
+      setEvents(prev => mergeEvents(prev, combinedNew));
     } catch (e) {
       console.error("Timeline Load Error", e);
     } finally {
@@ -63,7 +85,6 @@ export const Timeline: React.FC<Props> = ({ filter, live = true, isMoving = fals
     }
   }, [filter, loading, hasMore]);
 
-  // フィルタ変更時の完全リセット
   useEffect(() => {
     setEvents([]);
     setHasMore(true);
@@ -71,7 +92,6 @@ export const Timeline: React.FC<Props> = ({ filter, live = true, isMoving = fals
     loadEvents(true);
   }, [filterString]);
 
-  // WebSocket持続購読: どのモードでも裏で最新情報をキャッチし続ける
   useEffect(() => {
     if (!live) return;
 
@@ -79,7 +99,7 @@ export const Timeline: React.FC<Props> = ({ filter, live = true, isMoving = fals
       setEvents(prev => {
         if (prev.some(e => e.id === event.id)) return prev;
         const updated = [event, ...prev].sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
-        return updated.slice(0, 400); // メモリ管理のため
+        return updated.slice(0, 500); 
       });
     });
 
@@ -88,7 +108,6 @@ export const Timeline: React.FC<Props> = ({ filter, live = true, isMoving = fals
     };
   }, [filterString, live]);
 
-  // 無限スクロール
   useEffect(() => {
     const scrollParent = observerTarget.current?.closest('.scroll-content');
     if (!scrollParent) return;
@@ -102,7 +121,7 @@ export const Timeline: React.FC<Props> = ({ filter, live = true, isMoving = fals
       { 
         root: scrollParent,
         threshold: 0.1, 
-        rootMargin: '1000px'
+        rootMargin: '1200px'
       }
     );
 
@@ -123,13 +142,13 @@ export const Timeline: React.FC<Props> = ({ filter, live = true, isMoving = fals
         {loading ? (
           <div className="flex items-center gap-4">
             <Loader2 className="animate-spin opacity-50 text-blue-500" size={20} />
-            <span className="text-[10px] uppercase tracking-[0.4em] font-black italic">Receiving Signal...</span>
+            <span className="text-[10px] uppercase tracking-[0.4em] font-black italic">Synchronizing...</span>
           </div>
         ) : hasMore ? (
           <div className="h-4 w-full" /> 
         ) : (
           <div className="p-10 text-center">
-            <p className="text-[10px] uppercase tracking-widest opacity-20 font-black">Temporal Void End</p>
+            <p className="text-[10px] uppercase tracking-widest opacity-20 font-black">Memory Limit Reached</p>
           </div>
         )}
       </div>
