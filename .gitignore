@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# DB Backups (local only)
+backups/
+.credentials.local
+
+# Google Drive API credentials
+credentials.json
+token.pickle
