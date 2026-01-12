@@ -73,23 +73,12 @@ cp "$PROJECT_DIR/index.tsx" "$WORK_DIR/"
 cp "$PROJECT_DIR/types.ts" "$WORK_DIR/"
 cp "$PROJECT_DIR/tsconfig.json" "$WORK_DIR/"
 cp "$PROJECT_DIR/vite.config.ts" "$WORK_DIR/"
-cp -r "$PROJECT_DIR/components" "$WORK_DIR/"
-cp -r "$PROJECT_DIR/config" "$WORK_DIR/"
-cp -r "$PROJECT_DIR/pages" "$WORK_DIR/"
-cp -r "$PROJECT_DIR/services" "$WORK_DIR/"
+cp -rf "$PROJECT_DIR/components" "$WORK_DIR/"
+cp -rf "$PROJECT_DIR/services" "$WORK_DIR/"
+cp -rf "$PROJECT_DIR/scripts" "$WORK_DIR/"
 
-# 共有ライブラリ・ユーティリティ
-cp -r "$PROJECT_DIR/lib" "$WORK_DIR/"
-cp -r "$PROJECT_DIR/utils" "$WORK_DIR/"
-
-# バックエンドファイル
-cp -r "$PROJECT_DIR/api" "$WORK_DIR/"
-cp -r "$PROJECT_DIR/shared" "$WORK_DIR/"
-cp -r "$PROJECT_DIR/iac" "$WORK_DIR/"
-cp -r "$PROJECT_DIR/core" "$WORK_DIR/"
-cp -r "$PROJECT_DIR/adapters" "$WORK_DIR/"
-cp -r "$PROJECT_DIR/db" "$WORK_DIR/"
-cp -r "$PROJECT_DIR/.github" "$WORK_DIR/"
+# バックエンド
+cp -rf "$PROJECT_DIR/.github" "$WORK_DIR/"
 
 # Step 3: ZIP作成
 echo "[3/3] ZIP作成中..."
@@ -130,9 +119,5 @@ else
     echo "  2. 「バージョンを管理」をクリック"
     echo "  3. 「新しいバージョンをアップロード」で以下を選択:"
     echo "     $OUTPUT_FILE"
-    echo ""
-    echo "※ 自動アップロードを有効にするには:"
-    echo "  1. プロジェクトルートに 'credentials.json' を配置してください"
-    echo "  2. 必要なライブラリをインストール: pip3 install google-api-python-client google-auth-httplib2 google-auth-oauthlib"
 fi
 echo ""
