@@ -30,3 +30,4 @@ backups/
 # Google Drive API credentials
 credentials.json
 token.pickle
+.venv
