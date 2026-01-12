@@ -13,7 +13,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 DOWNLOAD_SCRIPT="$SCRIPT_DIR/download-from-drive.py"
 TEMP_DIR=$(mktemp -d)
-DOWNLOAD_PATH="$TEMP_DIR/collenavi_latest.zip"
+DOWNLOAD_PATH="$TEMP_DIR/nostrcube_latest.zip"
 SYNC_HASH_FILE=".ais-sync-hash"
 
 # オプション解析
