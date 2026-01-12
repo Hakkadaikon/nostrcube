@@ -76,9 +76,10 @@ cp "$PROJECT_DIR/vite.config.ts" "$WORK_DIR/"
 cp -rf "$PROJECT_DIR/components" "$WORK_DIR/"
 cp -rf "$PROJECT_DIR/services" "$WORK_DIR/"
 cp -rf "$PROJECT_DIR/scripts" "$WORK_DIR/"
+rm -rf $WORK_DIR/scripts/.venv
 
 # バックエンド
-cp -rf "$PROJECT_DIR/.github" "$WORK_DIR/"
+#cp -rf "$PROJECT_DIR/.github" "$WORK_DIR/"
 
 # Step 3: ZIP作成
 echo "[3/3] ZIP作成中..."
