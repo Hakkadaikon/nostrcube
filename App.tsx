@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { CubeFace } from './types';
 import { nostrService } from './services/nostr';
@@ -318,7 +317,6 @@ const App: React.FC = () => {
         className="flex-1 min-h-0 relative flex items-center justify-center overflow-hidden"
         onMouseDown={(e) => {
             if (mode !== 'SPIN' || isComposeOpen) return;
-            // fixed要素（認証ボタンなど）をクリックした場合はドラッグを開始しない
             if ((e.target as HTMLElement).closest('button, input, textarea, a, .scroll-content, .fixed')) return;
             startDrag(e.clientX, e.clientY);
         }}

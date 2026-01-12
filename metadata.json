@@ -4,8 +4,5 @@
   "requestFramePermissions": [
     "camera",
     "microphone"
-  ],
-  "executables": [
-    "ais-pull.sh"
   ]
 }

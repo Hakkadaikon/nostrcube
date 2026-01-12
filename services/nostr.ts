@@ -1,4 +1,3 @@
-
 import NDK, { NDKEvent, NDKUser, NDKNip07Signer, NDKPrivateKeySigner, NostrEvent } from '@nostr-dev-kit/ndk';
 
 const DEFAULT_RELAYS = [
@@ -208,7 +207,6 @@ class NostrService {
     try {
       this.signer = new NDKNip07Signer();
       this.ndk.signer = this.signer;
-      // ユーザーの承認を待つ
       const user = await this.signer.user();
       if (!user) return null;
       
@@ -216,7 +214,6 @@ class NostrService {
       localStorage.setItem(SESSION_KEY, user.pubkey);
       this.notify();
       
-      // プロファイル情報をバックグラウンドで取得
       await this.restoreUserData(user);
       return user;
     } catch (e) {
