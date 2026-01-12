@@ -41,7 +41,6 @@ class NostrService {
     });
     this.relayList = DEFAULT_RELAYS.map(url => ({ url, enabled: true, status: 'connecting' }));
     
-    // 起動時にローカルストレージからフォローリストを即時復元
     const cachedFollows = localStorage.getItem(FOLLOW_CACHE_KEY);
     if (cachedFollows) {
       try { this.following = JSON.parse(cachedFollows); } catch (e) {}
@@ -66,7 +65,7 @@ class NostrService {
           this.db = e.target.result;
           resolve(this.db);
         };
-        request.onerror = () => resolve(null); // エラー時はDBなしで進行
+        request.onerror = () => resolve(null);
       } catch (e) {
         resolve(null);
       }
@@ -135,29 +134,13 @@ class NostrService {
   }
 
   async init() {
-    console.log("NostrService: Initializing system...");
-    // DB初期化はバックグラウンドで行う
     this.initDB();
-    
-    // リレー接続
     this.ndk.connect(3000).catch(() => {});
 
     const savedPubkey = localStorage.getItem(SESSION_KEY);
     if (savedPubkey) {
-      try {
-        // NIP-07チェック (存在する場合のみ)
-        if (typeof window !== 'undefined' && (window as any).nostr) {
-          this.signer = new NDKNip07Signer();
-          this.ndk.signer = this.signer;
-        }
-      } catch (e) {
-        console.warn("Signer initialization bypassed.");
-      }
-      
       const user = this.ndk.getUser({ pubkey: savedPubkey });
       this.currentUser = user;
-      
-      // ユーザー情報の復旧は並列で行い、UIをブロックしない
       this.restoreUserData(user).catch(console.error);
     }
     
@@ -168,11 +151,13 @@ class NostrService {
     try {
       await user.fetchProfile();
       this.notify();
-      await this.fetchUserRelays(user);
-      await this.fetchFollowing(user);
+      await Promise.all([
+        this.fetchUserRelays(user),
+        this.fetchFollowing(user)
+      ]);
       this.notify();
     } catch (e) {
-      console.error("User restoration background task error", e);
+      console.error("User restoration error", e);
     }
   }
 
@@ -216,18 +201,26 @@ class NostrService {
   }
 
   async loginWithExtension() {
-    if (typeof window === 'undefined' || !(window as any).nostr) return null;
+    if (typeof window === 'undefined' || !(window as any).nostr) {
+      throw new Error("NIP-07 Extension not found");
+    }
 
     try {
       this.signer = new NDKNip07Signer();
       this.ndk.signer = this.signer;
+      // ユーザーの承認を待つ
       const user = await this.signer.user();
+      if (!user) return null;
+      
       this.currentUser = user;
       localStorage.setItem(SESSION_KEY, user.pubkey);
-      await this.restoreUserData(user);
       this.notify();
+      
+      // プロファイル情報をバックグラウンドで取得
+      await this.restoreUserData(user);
       return user;
     } catch (e) {
+      console.error("Login Error:", e);
       return null;
     }
   }

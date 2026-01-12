@@ -67,16 +67,13 @@ const App: React.FC = () => {
     setIsLoggingIn(true);
     setLoginError(null);
     try {
-      if (!(window as any).nostr) {
-        throw new Error("NIP-07 extension (Alby, Nos2x, etc.) not found.");
-      }
       const user = await nostrService.loginWithExtension();
       if (!user) {
-        throw new Error("Authentication failed or cancelled.");
+        throw new Error("Connect Request Denied");
       }
     } catch (e: any) {
       console.error("Login error:", e);
-      setLoginError(e.message);
+      setLoginError(e.message || "Failed to sync with NIP-07");
       setTimeout(() => setLoginError(null), 5000);
     } finally {
       setIsLoggingIn(false);
@@ -247,7 +244,7 @@ const App: React.FC = () => {
       className={`h-screen w-screen overflow-hidden flex flex-col bg-[#050505] select-none text-white font-sans ${mode === 'SPIN' ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
       onDoubleClick={() => setMode(prev => prev === 'SPIN' ? 'SCROLL' : 'SPIN')}
     >
-      {/* 🚀 TOP-LEFT AUTH UNIT */}
+      {/* 🚀 TOP-LEFT AUTH/PROFILE UNIT */}
       <div className="fixed top-6 left-6 z-[150] pointer-events-auto flex flex-col items-start gap-2">
         {!loggedIn ? (
           <div className="flex flex-col gap-2">
@@ -278,14 +275,14 @@ const App: React.FC = () => {
                 alt="Avatar" 
                 className="w-12 h-12 rounded-2xl object-cover bg-zinc-900 border border-white/10 shadow-lg"
               />
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-black rounded-full" />
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-black rounded-full shadow-sm" />
             </div>
             <div className="flex flex-col min-w-[120px] max-w-[200px]">
               <span className="font-black text-sm text-zinc-100 truncate flex items-center gap-1 leading-none mb-1">
                 {currentUser.profile?.displayName || currentUser.profile?.name || "Voyager"}
                 <ShieldCheck size={14} className="text-blue-400 shrink-0" />
               </span>
-              <span className="text-[10px] text-blue-400/70 font-mono truncate leading-none">
+              <span className="text-[10px] text-blue-400/70 font-mono truncate leading-none opacity-80">
                 {currentUser.profile?.nip05 || `@${currentUser.pubkey.slice(0, 8)}`}
               </span>
             </div>
@@ -294,7 +291,7 @@ const App: React.FC = () => {
             <button 
               onClick={handleLogout}
               className="ml-2 p-2.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
-              title="Disconnect"
+              title="Disconnect Session"
             >
               <LogOut size={18} />
             </button>
@@ -321,6 +318,7 @@ const App: React.FC = () => {
         className="flex-1 min-h-0 relative flex items-center justify-center overflow-hidden"
         onMouseDown={(e) => {
             if (mode !== 'SPIN' || isComposeOpen) return;
+            // fixed要素（認証ボタンなど）をクリックした場合はドラッグを開始しない
             if ((e.target as HTMLElement).closest('button, input, textarea, a, .scroll-content, .fixed')) return;
             startDrag(e.clientX, e.clientY);
         }}
